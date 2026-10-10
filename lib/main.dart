@@ -1,194 +1,63 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() {
-  runApp(const Lab4App());
+  runApp(const MyApp());
 }
 
-class Lab4App extends StatelessWidget {
-  const Lab4App({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Лабораторная 4 — Cubit',
+      title: 'Калькулятор',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
-      ),
-      home: const MainScreenProvider(),
-    );
-  }
-}
-
-// ============================ СОСТОЯНИЯ ============================
-
-/// Базовый класс состояний главного экрана.
-/// Все возможные "экраны" приложения — наследники этого класса.
-abstract class MainScreenState {
-  const MainScreenState();
-}
-
-/// Состояние "экран ввода данных" (бывший первый экран).
-class MainScreenInput extends MainScreenState {
-  const MainScreenInput();
-}
-
-/// Состояние "экран результата" (бывший второй экран).
-/// Результат хранится прямо в состоянии — передавать его
-/// через аргументы Navigator больше не нужно.
-class MainScreenResult extends MainScreenState {
-  final double first;
-  final double second;
-  final String operation;
-  final double result;
-
-  const MainScreenResult({
-    required this.first,
-    required this.second,
-    required this.operation,
-    required this.result,
-  });
-}
-
-/// Состояние ошибки валидации ввода.
-class MainScreenError extends MainScreenState {
-  final String message;
-
-  const MainScreenError(this.message);
-}
-
-// ============================ КУБИТ ============================
-
-/// Кубит главного экрана.
-/// Вся бизнес-логика (расчёты) вынесена сюда, UI только читает состояние.
-class MainScreenCubit extends Cubit<MainScreenState> {
-  MainScreenCubit() : super(const MainScreenInput());
-
-  /// Расчёт — единственное место, где "живёт" формула.
-  void calculate({
-    required String firstText,
-    required String secondText,
-    required String operation,
-  }) {
-    final first = double.tryParse(firstText.replaceAll(',', '.'));
-    final second = double.tryParse(secondText.replaceAll(',', '.'));
-
-    if (first == null || second == null) {
-      emit(const MainScreenError('Введите корректные числа'));
-      return;
-    }
-
-    double result;
-    switch (operation) {
-      case '+':
-        result = first + second;
-        break;
-      case '-':
-        result = first - second;
-        break;
-      case '*':
-        result = first * second;
-        break;
-      case '/':
-        if (second == 0) {
-          emit(const MainScreenError('Деление на ноль невозможно'));
-          return;
-        }
-        result = first / second;
-        break;
-      default:
-        emit(const MainScreenError('Неизвестная операция'));
-        return;
-    }
-
-    // Вместо Navigator.push — смена состояния:
-    emit(
-      MainScreenResult(
-        first: first,
-        second: second,
-        operation: operation,
-        result: result,
-      ),
-    );
-  }
-
-  /// Вместо Navigator.pop — возврат к состоянию ввода.
-  void backToInput() {
-    emit(const MainScreenInput());
-  }
-}
-
-// ============================ ПРОВАЙДЕР ============================
-
-/// Провайдер кубита: оборачивает экран, чтобы все виджеты
-/// имели доступ к одному экземпляру MainScreenCubit.
-class MainScreenProvider extends StatelessWidget {
-  const MainScreenProvider({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => MainScreenCubit(),
-      child: const MainScreen(),
-    );
-  }
-}
-
-// ============================ ЭКРАН ============================
-
-/// Экран приложения: один виджет, который в зависимости от состояния
-/// кубита показывает "экран ввода", "экран результата" или ошибку.
-/// Никакого Navigator — смена экранов происходит через emit состояний.
-class MainScreen extends StatelessWidget {
-  const MainScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: BlocBuilder<MainScreenCubit, MainScreenState>(
-          builder: (context, state) {
-            if (state is MainScreenResult) {
-              return const Text('Результат');
-            }
-            return const Text('Калькулятор');
-          },
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.light,
+        ),
+        // Единый стиль для текстовых полей
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.indigo.withOpacity(0.05),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Colors.indigo, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         ),
       ),
-      body: BlocBuilder<MainScreenCubit, MainScreenState>(
-        builder: (context, state) {
-          if (state is MainScreenInput) {
-            return const _InputView();
-          }
-          if (state is MainScreenResult) {
-            return _ResultView(state: state);
-          }
-          if (state is MainScreenError) {
-            return _ErrorView(message: state.message);
-          }
-          return const SizedBox.shrink();
-        },
-      ),
+      home: const CalculatorScreen(),
     );
   }
 }
 
-// ---------- "Экран ввода" ----------
-
-class _InputView extends StatefulWidget {
-  const _InputView();
+class CalculatorScreen extends StatefulWidget {
+  const CalculatorScreen({super.key});
 
   @override
-  State<_InputView> createState() => _InputViewState();
+  State<CalculatorScreen> createState() => _CalculatorScreenState();
 }
 
-class _InputViewState extends State<_InputView> {
+class _CalculatorScreenState extends State<CalculatorScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _firstController = TextEditingController();
   final _secondController = TextEditingController();
-  String _operation = '+';
+  
+  // Доступные операции
+  final List<String> _operations = ['+', '-', '×', '÷'];
+  int _selectedOperationIndex = 0; // По умолчанию выбран плюс
+  String _result = '';
 
   @override
   void dispose() {
@@ -197,136 +66,179 @@ class _InputViewState extends State<_InputView> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<MainScreenCubit>();
+  void _calculate() {
+    if (_formKey.currentState!.validate()) {
+      final num1 = double.parse(_firstController.text.replaceAll(',', '.'));
+      final num2 = double.parse(_secondController.text.replaceAll(',', '.'));
+      double res = 0;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: _firstController,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-              signed: true,
-            ),
-            decoration: const InputDecoration(
-              labelText: 'Первое число',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _secondController,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-              signed: true,
-            ),
-            decoration: const InputDecoration(
-              labelText: 'Второе число',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: '+', label: Text('+')),
-              ButtonSegment(value: '-', label: Text('−')),
-              ButtonSegment(value: '*', label: Text('×')),
-              ButtonSegment(value: '/', label: Text('÷')),
-            ],
-            selected: {_operation},
-            onSelectionChanged: (selected) =>
-                setState(() => _operation = selected.first),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () => cubit.calculate(
-              firstText: _firstController.text,
-              secondText: _secondController.text,
-              operation: _operation,
-            ),
-            child: const Text('Рассчитать'),
-          ),
-        ],
-      ),
-    );
+      switch (_selectedOperationIndex) {
+        case 0:
+          res = num1 + num2;
+          break;
+        case 1:
+          res = num1 - num2;
+          break;
+        case 2:
+          res = num1 * num2;
+          break;
+        case 3:
+          if (num2 == 0) {
+            setState(() => _result = 'Ошибка: деление на 0');
+            return;
+          }
+          res = num1 / num2;
+          break;
+      }
+
+      // Убираем лишние нули после запятой, если число целое
+      setState(() {
+        if (res % 1 == 0) {
+          _result = res.toInt().toString();
+        } else {
+          _result = res.toStringAsFixed(3);
+        }
+      });
+    }
   }
-}
-
-// ---------- "Экран результата" ----------
-
-class _ResultView extends StatelessWidget {
-  final MainScreenResult state;
-
-  const _ResultView({required this.state});
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<MainScreenCubit>();
+    final theme = Theme.of(context);
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '${_fmt(state.first)} ${state.operation} ${_fmt(state.second)}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '= ${_fmt(state.result)}',
-              style: Theme.of(context).textTheme.headlineLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 32),
-            OutlinedButton.icon(
-              onPressed: cubit.backToInput,
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Новый расчёт'),
-            ),
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Калькулятор',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
       ),
-    );
-  }
-
-  String _fmt(double value) {
-    final fixed = value.toStringAsFixed(4);
-    return fixed.replaceAll(RegExp(r'0+$'), '').replaceAll('.', ',');
-  }
-}
-
-// ---------- Состояние ошибки ----------
-
-class _ErrorView extends StatelessWidget {
-  final String message;
-
-  const _ErrorView({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<MainScreenCubit>();
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            OutlinedButton(
-              onPressed: cubit.backToInput,
-              child: const Text('Назад'),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 10),
+                // Первое число
+                TextFormField(
+                  controller: _firstController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Первое число',
+                    hintText: 'Введите значение',
+                    prefixIcon: Icon(Icons.looks_one_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Введите первое число';
+                    if (double.tryParse(value.replaceAll(',', '.')) == null) return 'Введите корректное число';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Второе число
+                TextFormField(
+                  controller: _secondController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Второе число',
+                    hintText: 'Введите значение',
+                    prefixIcon: Icon(Icons.looks_two_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Введите второе число';
+                    if (double.tryParse(value.replaceAll(',', '.')) == null) return 'Введите корректное число';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                
+                // Красивый кастомный выбор операций
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(_operations.length, (index) {
+                    final isSelected = _selectedOperationIndex == index;
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: InkWell(
+                          onTap: () => setState(() => _selectedOperationIndex = index),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: isSelected ? theme.colorScheme.primary : theme.colorScheme.primaryContainer.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                _operations[index],
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 32),
+                
+                // Главная кнопка расчета
+                FilledButton(
+                  onPressed: _calculate,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Рассчитать',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                
+                // Визуальный блок с результатом (появляется при расчете)
+                if (_result.isNotEmpty) ...[
+                  const SizedBox(height: 32),
+                  Card(
+                    elevation: 0,
+                    color: theme.colorScheme.secondaryContainer.withOpacity(0.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Результат вычислений',
+                            style: TextStyle(color: theme.colorScheme.onSecondaryContainer.withOpacity(0.7)),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _result,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
